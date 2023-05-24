@@ -1,0 +1,15 @@
+C:\Users\qinxi\source\repos\WindowsFormsApp1\WindowsFormsApp1\bin\Debug\WindowsFormsApp1.exe.config
+C:\Users\qinxi\source\repos\WindowsFormsApp1\WindowsFormsApp1\bin\Debug\WindowsFormsApp1.exe
+C:\Users\qinxi\source\repos\WindowsFormsApp1\WindowsFormsApp1\bin\Debug\WindowsFormsApp1.pdb
+C:\Users\qinxi\source\repos\WindowsFormsApp1\WindowsFormsApp1\obj\Debug\广播星历.csprojAssemblyReference.cache
+C:\Users\qinxi\source\repos\WindowsFormsApp1\WindowsFormsApp1\obj\Debug\WindowsFormsApp1.Form1.resources
+C:\Users\qinxi\source\repos\WindowsFormsApp1\WindowsFormsApp1\obj\Debug\WindowsFormsApp1.Properties.Resources.resources
+C:\Users\qinxi\source\repos\WindowsFormsApp1\WindowsFormsApp1\obj\Debug\广播星历.csproj.GenerateResource.cache
+C:\Users\qinxi\source\repos\WindowsFormsApp1\WindowsFormsApp1\obj\Debug\广播星历.csproj.CoreCompileInputs.cache
+C:\Users\qinxi\source\repos\WindowsFormsApp1\WindowsFormsApp1\obj\Debug\WindowsFormsApp1.exe
+C:\Users\qinxi\source\repos\WindowsFormsApp1\WindowsFormsApp1\obj\Debug\WindowsFormsApp1.pdb
+C:\Users\qinxi\source\repos\WindowsFormsApp1\WindowsFormsApp1\bin\Debug\MathNet.Numerics.dll
+C:\Users\qinxi\source\repos\WindowsFormsApp1\WindowsFormsApp1\bin\Debug\System.ValueTuple.dll
+C:\Users\qinxi\source\repos\WindowsFormsApp1\WindowsFormsApp1\bin\Debug\MathNet.Numerics.xml
+C:\Users\qinxi\source\repos\WindowsFormsApp1\WindowsFormsApp1\bin\Debug\System.ValueTuple.xml
+C:\Users\qinxi\source\repos\WindowsFormsApp1\WindowsFormsApp1\obj\Debug\广播星历.csproj.CopyComplete
