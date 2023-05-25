@@ -54,8 +54,7 @@ namespace WindowsFormsApp1
 
         }
         public double ChangeDataToD(string strData)
-        {
-            int i = Form1.debug;
+        {           
             char[] delimiterChars = { 'D' };
             string[] newstr = strData.Split(delimiterChars, StringSplitOptions.RemoveEmptyEntries);
             double data;

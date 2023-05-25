@@ -26,9 +26,11 @@ namespace WindowsFormsApp1
 
        public static int debug;
         double GM = 3.986005e14;
+        double ae = 6378136;
         double Oe = 7.2921151467e-5;
         double Oref =-2.6e-9;
         double Aref = 26559710;
+        double J0_2 = 1082625.7e-9;
         double c = 299792458; //光速常数
         double u = 3.986004418e14;//地球引力常数
         double w = 7.2921151467e-5;
@@ -75,6 +77,10 @@ namespace WindowsFormsApp1
             public double IDOT, GpsWeekNumber, L2C, L2P;// ORBIT - 5
             public double SVaccuracy, SVhealth, TGD, IODC;// ORBIT - 6
             public double Transmisstion, Fit;//ORBIR-7
+
+            public double X;
+            public double Y;
+            public double Z;
         };
         public class Position
         {
@@ -238,9 +244,19 @@ namespace WindowsFormsApp1
 
                 Xk = xk * Math.Cos(Omegak) - yk * Math.Cos(ik) * Math.Sin(Omegak);
                 Yk = xk * Math.Sin(Omegak) + yk * Math.Cos(ik) * Math.Cos(Omegak);
-                Zk = yk * Math.Sin(ik);   
-           
+                Zk = yk * Math.Sin(ik);
+             
         }
+
+        private void CR(double xi, double yi, double zi, double vx, double vy, double vz, double xls, double yls, double zls
+            ,ref double f1,ref double f2,ref double f3)
+        { 
+           double r = Math.Sqrt(xi * xi + yi * yi + zi * zi);
+           f1 = -GM * xi / (r *r*r)  - 1.5 * J0_2 * GM * ae * ae * xi * (1 - 5 * zi * zi / (r * r)) /Math.Pow(r,5) + w * w * xi + 2 * w * vy + xls;
+           f2 = -GM * yi / (r * r * r) - 1.5 * J0_2 * GM * ae * ae * yi * (1 - 5 * zi * zi / (r * r)) / Math.Pow(r, 5) + w * w * yi - 2 * w * vx + yls;
+           f3 = -GM * zi / (r * r * r) - 1.5 * J0_2 * GM * ae * ae * zi * (3 - 5 * zi * zi / (r * r)) / Math.Pow(r, 5) + zls;
+           
+       }      
         private int foundEpoch_Ephemeris(epoch obs,epochbody obs_data)
         {
             double t,toe;
@@ -255,17 +271,22 @@ namespace WindowsFormsApp1
             }
             return -1;
         }
+        private void SPP_SF(int EPHEMERISBLOCKNum)
+        {
        
+   
+        }
         private void SPP(int EPHEMERISBLOCKNum)
         {
             ProcessData processdata = new ProcessData();
             var X0 = new DenseMatrix(4, 1);
             var X1 = new DenseMatrix(4, 1);
-            // var A  =new DenseMatrix(4, 1);
-            // var L = new DenseMatrix(1);
            
-            // List<Matrix<double>> matricesA = new List<Matrix<double>>();
-            // List<Matrix<double>> matricesL= new List<Matrix<double>>();
+            X0.At(0, 0, obs_X);
+            X0.At(1, 0, obs_Y);
+            X0.At(2, 0, obs_Z);
+            X0.At(3, 0, 0);
+            
             X1.At(0, 0, 1);
             X1.At(1, 0, 1);
             X1.At(2, 0, 1);
@@ -282,8 +303,8 @@ namespace WindowsFormsApp1
                 epoch obs = new epoch();
                 obs = pobs_epoch[j];
                 t = processdata.Calendar2GpsTime(obs.y, obs.m, obs.d, obs.h, obs.min, obs.sec);
-                while (Math.Abs(X0.At(0, 0) - X1.At(0, 0)) > 0.001 &&
-                      Math.Abs(X0.At(1, 0) - X1.At(1, 0)) > 0.001 &&
+                while (Math.Abs(X0.At(0, 0) - X1.At(0, 0)) > 0.001 ||
+                      Math.Abs(X0.At(1, 0) - X1.At(1, 0)) > 0.001 ||
                       Math.Abs(X0.At(2, 0) - X1.At(2, 0)) > 0.001)
                 {
                     double[] arrayA = { 0, 0, 0, 1 };
@@ -302,6 +323,12 @@ namespace WindowsFormsApp1
                         EPHEMERISBLOCK temp_satelite = new EPHEMERISBLOCK();
                         if (i < 0)
                             continue;
+                        string types_of_Satelite = Satelite[i].PRN.Substring(0, 1);
+                        if (types_of_Satelite == "R")
+                        {
+                            continue;
+                        }
+                       
                         temp_satelite = Satelite[i];
                         double a0, a1, a2;
                         a0 = temp_satelite.a0;
@@ -346,15 +373,11 @@ namespace WindowsFormsApp1
                             A[0, 2] = az;
                             A[0, 3] = 1;
                         }
-                        else
-                        {
-                           // A = A.Append(temp_matrix);
+                        else                                           
                            A= Matrix<double>.Build.DenseOfMatrixArray(new Matrix<double>[,] { { A},{ temp_matrix } });
-                            // matricesA.Add(Atemp);
-                            // matricesA[k] = matricesA[k - 1].Append(temp_matrix);
-
-                        }
-                        ll = Obs_Data.C1 - pk0 + delta_ts * c;
+                          
+                   
+                        ll = Obs_Data.C1 - pk0 + delta_tr * c;
                         temp_matrixl.At(0, 0, ll);
                         if (k == 0)
                             L.At(0, 0, ll);
@@ -375,9 +398,9 @@ namespace WindowsFormsApp1
                     tt = X0.At(3, 0);
 
                     X0.At(0, 0, xx + x.At(0, 0));
-                    X0.At(1, 0, xx + x.At(1, 0));
-                    X0.At(2, 0, xx + x.At(2, 0));
-                    X0.At(3, 0, xx + x.At(3, 0));
+                    X0.At(1, 0, yy + x.At(1, 0));
+                    X0.At(2, 0, zz + x.At(2, 0));
+                    X0.At(3, 0, tt);
                 }
                
             }
