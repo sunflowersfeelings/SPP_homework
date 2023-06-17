@@ -39,7 +39,9 @@ namespace WindowsFormsApp1
         double deltaH, deltaE, deltaN;//天线高、天线中心相对于测站标志在东向偏移量、北向偏移量
         double FL1, FL2;// 缺省的L1和L2载波的波长因子
         double Interval;//历元间隔
-        public  class epoch
+
+     
+        public class epoch
         {
             //观测历元时刻
             public int y;
@@ -57,7 +59,7 @@ namespace WindowsFormsApp1
         public class epochbody
         {
             public string sPRN;
-            //public List<double> data = new List<double>();
+            public List<double> data = new List<double>();
             public double C1;//伪距值
         }
 
@@ -78,9 +80,8 @@ namespace WindowsFormsApp1
             public double SVaccuracy, SVhealth, TGD, IODC;// ORBIT - 6
             public double Transmisstion, Fit;//ORBIR-7
 
-            public double X;
-            public double Y;
-            public double Z;
+            public double Elevarting;//截止高度角；
+            public double Azimuth;//方位角
         };
         public class Position
         {
@@ -96,8 +97,11 @@ namespace WindowsFormsApp1
 
         private void button2_Click(object sender, EventArgs e)
         {
-            if(Satelite.Count>0 && pobs_epoch.Count>0)
-            SPP(EPHEMERISBLOCKNum);
+            if (Satelite.Count > 0 && pobs_epoch.Count > 0)
+            {
+                CBroadCast(EPHEMERISBLOCKNum);
+                SPP(EPHEMERISBLOCKNum);
+            }
         }
 
         // EPHEMERISBLOCK[] satelite = new EPHEMERISBLOCK[423];
@@ -168,25 +172,9 @@ namespace WindowsFormsApp1
                 temp_sat.y = Yk;
                 temp_sat.z = Zk;
                 sat_pos.Add(temp_sat);
-                // Xk = Xk * 0.001;
-                //Yk = Yk * 0.001;
-                // Zk = Zk * 0.001;
-                /* sw.Write("Xk:");
-                 sw.Write(Xk);
-                 sw.Write(" ");
-
-                 sw.Write("Yk:");
-                 sw.Write(Yk);
-                 sw.Write(" ");
-
-                 sw.Write("Zk:");
-                 sw.Write(Zk);
-                 sw.Write(" ");
-                 sw.Write('\n');*/
+               
             }
 
-           // sw.Flush();
-            //sw.Close();
         }
 
         public void C_xyz(double t, EPHEMERISBLOCK satelite, ref double Xk, ref double Yk, ref double Zk)
@@ -271,22 +259,98 @@ namespace WindowsFormsApp1
             }
             return -1;
         }
-        private void SPP_SF(int EPHEMERISBLOCKNum)
+        private double SPP_Trop(double H,double E)//对流层延迟
         {
-       
-   
+
+            double Trop;
+            double T = 288.15 - 6.5 * H * 0.001;
+            double P = 1013.25 * Math.Pow(288.15 / T, -5.255877);
+            double es;
+            if (T < 273.16)
+                es = Math.Exp(21.3195 - 5327.1157 / T);
+            else
+                es = Math.Exp(24.3702 - 6162.3496 / T);
+            double Dd = 155.2 * 0.0000001 * (P / T) * (40136.0 + 148.72 * (T - 273.16) - H) / Math.Sin(Math.Sqrt(E * E + 6.25) * 3.14159265358979323846 / 180);
+            double Dw = 155.2 * 0.0000001 * 4810 * es / (T * T) * (11000 - H) / Math.Sin(Math.Sqrt(E * E + 2.25) * 3.14159265358979323846 / 180);
+            return Trop = Dd + Dw;
+        }
+        //6-13-------------=start--------
+        /* troposphere model -----------------------------------------------------------
+         * compute tropospheric delay by standard atmosphere and saastamoinen model
+         * args   : double b/h          I   接收机天线的纬度和高程
+         *          double azimuth      I   卫星方位角
+         *          double elevation    I   卫星高度角
+         *          double humi         I   相对湿度（目前上海为0.75）
+         * return : tropospheric delay (m)
+         *-----------------------------------------------------------------------------*/
+
+
+        private double tropmodel(double b, double h, double azimuth, double elevation, double humi)
+        {
+            const double temp0 = 15.0; /* temparature at sea level */
+            double hgt, pres, temp, e, z, trph, trpw;
+
+            if (h < -100.0 || 1E4 < h || elevation <= 0) return 0.0;
+
+            /* standard atmosphere */
+            hgt = h < 0.0 ? 0.0 : h;
+
+            pres = 1013.25 * Math.Pow(1.0 - 2.2557E-5 * hgt, 5.2568);
+            temp = temp0 - 6.5E-3 * hgt + 273.16;
+            e = 6.108 * humi * Math.Exp((17.15 * temp - 4684.0) / (temp - 38.45));
+
+            /* saastamoninen model */
+            z = Math.PI / 2.0 - azimuth;
+            trph = 0.0022768 * pres / (1.0 - 0.00266 * Math.Cos(2.0 * b) - 0.00028 * hgt / 1E3) / Math.Cos(z);
+            trpw = 0.002277 * (1255.0 / temp + 0.05) * e / Math.Cos(z);
+            return trph + trpw;
+        }
+        //6-13--------------end----------
+
+
+        public void Angle_Calculate(double B,double L,double H)
+        {
+            double[,] KK = new double[3, 3];
+            double deltX, deltY, deltZ;
+            
+            KK[0, 0] = -Math.Sin(B) * Math.Cos(L);
+            KK[0, 1] = -Math.Sin(B) * Math.Sin(L);
+            KK[0, 2] = Math.Cos(B);
+            KK[1, 0] = -Math.Sin(L);
+            KK[1, 1] = Math.Cos(L);
+            KK[1, 2] = 0;
+            KK[2, 0] = Math.Cos(B) * Math.Cos(L);
+            KK[2, 1] = Math.Cos(B) * Math.Sin(L);
+            KK[2, 2] = Math.Sin(B);
+            for (int i = 0; i < sat_pos.Count; i++)
+            {               
+                Position temp_pos = new Position();
+                temp_pos = sat_pos[i];
+                deltX = KK[0, 0] * (temp_pos.x - obs_X) + KK[0, 1] * (temp_pos.y- obs_Y) + KK[0, 2] * (temp_pos.z - obs_Z);
+                deltY = KK[1, 0] * (temp_pos.x - obs_X) + KK[1, 1] * (temp_pos.y - obs_Y) + KK[1, 2] * (temp_pos.z - obs_Z);
+                deltZ = KK[2, 0] * (temp_pos.x - obs_X) + KK[2, 1] * (temp_pos.y - obs_Y) + KK[2, 2] * (temp_pos.z - obs_Z);
+                Satelite[i].Elevarting = Math.Atan2(deltZ , Math.Sqrt(deltX * deltX + deltY * deltY));
+                Satelite[i].Azimuth = Math.Atan2(deltY , deltX);
+            }
         }
         private void SPP(int EPHEMERISBLOCKNum)
         {
             ProcessData processdata = new ProcessData();
+            double lat=0, lon=0, height=0;
+            double humi = 0.75;
+            processdata.xyz2BLH(obs_X, obs_Y, obs_Z,ref lat, ref lon,ref height);//根据测站概略位置计算经纬度坐标
+            Angle_Calculate(lat, lon, height);
             var X0 = new DenseMatrix(4, 1);
             var X1 = new DenseMatrix(4, 1);
-           
-            X0.At(0, 0, obs_X);
-            X0.At(1, 0, obs_Y);
-            X0.At(2, 0, obs_Z);
+
+            /*  X0.At(0, 0, obs_X);
+              X0.At(1, 0, obs_Y);
+              X0.At(2, 0, obs_Z);
+              X0.At(3, 0, 0);*/
+            X0.At(0, 0, 0);
+            X0.At(1, 0, 0);
+            X0.At(2, 0, 0);
             X0.At(3, 0, 0);
-            
             X1.At(0, 0, 1);
             X1.At(1, 0, 1);
             X1.At(2, 0, 1);
@@ -324,11 +388,11 @@ namespace WindowsFormsApp1
                         if (i < 0)
                             continue;
                         string types_of_Satelite = Satelite[i].PRN.Substring(0, 1);
-                        if (types_of_Satelite == "R")
+                      
+                        if (types_of_Satelite != "G")
                         {
                             continue;
                         }
-                       
                         temp_satelite = Satelite[i];
                         double a0, a1, a2;
                         a0 = temp_satelite.a0;
@@ -338,12 +402,13 @@ namespace WindowsFormsApp1
                         delta_ts = a0 + a1 * (t - toc) + a2 * Math.Pow((t - toc), 2);
 
 
-                        delta_tr = X0.At(3, 0) / c;
+                        delta_tr = X0.At(3, 0)/c;
                         ts1 = t - delta_tr - 0.075;
+                       
                         ts0 = ts1 + 1;
                         while (Math.Abs(ts1 - ts0) > 1e-8)
                         {
-                            ts0 = ts1;
+                            ts0 = ts1;                           
                             C_xyz(ts0, temp_satelite, ref Xk, ref Yk, ref Zk);
                             dt = Obs_Data.C1 / c;
                             //进行地球自转改正
@@ -375,9 +440,19 @@ namespace WindowsFormsApp1
                         }
                         else                                           
                            A= Matrix<double>.Build.DenseOfMatrixArray(new Matrix<double>[,] { { A},{ temp_matrix } });
-                          
+                        //2023-6-12-start
+                       /* double dtrop = SPP_Trop(height, temp_satelite.Elevarting);
+                       // ll = Obs_Data.C1 - pk0 + delta_tr * c;
+                        ll = Obs_Data.C1 - pk0 + delta_tr * c-dtrop;
+                        //2023-6-12-end
+                        */
+                        //2023-6-13-start
+                        double dtrop = tropmodel(lat,height, temp_satelite.Azimuth,temp_satelite.Elevarting,humi);                       
+                        ll = Obs_Data.C1 - pk0 + delta_ts* c - dtrop;
+                        //2023-6-13-end*/
                    
-                        ll = Obs_Data.C1 - pk0 + delta_tr * c;
+                       // ll = Obs_Data.C1 - pk0 + delta_ts * c;
+                       
                         temp_matrixl.At(0, 0, ll);
                         if (k == 0)
                             L.At(0, 0, ll);
@@ -400,7 +475,7 @@ namespace WindowsFormsApp1
                     X0.At(0, 0, xx + x.At(0, 0));
                     X0.At(1, 0, yy + x.At(1, 0));
                     X0.At(2, 0, zz + x.At(2, 0));
-                    X0.At(3, 0, tt);
+                    X0.At(3, 0,tt+x.At(3, 0));
                 }
                
             }

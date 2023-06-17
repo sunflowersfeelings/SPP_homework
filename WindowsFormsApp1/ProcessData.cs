@@ -61,5 +61,30 @@ namespace WindowsFormsApp1
             data = Convert.ToDouble(newstr[0]) * Math.Pow(10, Convert.ToDouble(newstr[1]));
             return data;
         }
+        public void xyz2BLH(double X, double Y, double Z, ref double B, ref double L, ref double H)//xyz坐标转BLH坐标
+        {
+            double R = Math.Sqrt(X * X + Y * Y);
+            double B0 = Math.Atan2(Z, R);
+            double B_ = 0;
+            double L_ = 0;
+
+            double a = 6378245;
+            double f = 1 / 298.3;
+            double N = 0;
+            while (true)
+            {
+                N = a / Math.Sqrt(1.0 - f * (2 - f) * Math.Sin(B0) * Math.Sin(B0));
+                B_ = Math.Atan2(Z + N * f * (2 - f) * Math.Sin(B0), R);
+                if (Math.Abs(B_ - B0) < 1.0e-7)
+                    break;
+                B0 = B_;             
+            }
+            L_ = Math.Atan2(Y, X);
+            H = R / Math.Cos(B_) - N;
+
+            B = B_;
+            L = L_;
+
+        }
     }
 }

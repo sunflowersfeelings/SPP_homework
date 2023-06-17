@@ -34,9 +34,11 @@ namespace WindowsFormsApp1
                     string types_of_Satelite = strlines[j].Substring(0, 1);
                     
                      
-                    for (int i=1;i<newstr.Length;i++)
+                    for (int i=0;i<newstr.Length-1;)
                     {
-
+                        i++;
+                        if (Convert.ToDouble(newstr[i]) % 1 == 0)
+                            continue;
                         obs_data.data.Add( Convert.ToDouble(newstr[i]));                      
                     }
                     obs_data.C1 = Convert.ToDouble(newstr[1]);
@@ -84,15 +86,15 @@ namespace WindowsFormsApp1
             j++;
             ProcessData processdata = new ProcessData();
 
-            satelite.X = processdata.ChangeDataToD(strlines[j].Substring(4, 20));
+            //satelite.X = processdata.ChangeDataToD(strlines[j].Substring(4, 20));
            
             j++;
 
-            satelite.Y= processdata.ChangeDataToD(strlines[j].Substring(4, 19));          
+          //  satelite.Y= processdata.ChangeDataToD(strlines[j].Substring(4, 19));          
 
             j++;
 
-            satelite.Z = processdata.ChangeDataToD(strlines[j].Substring(4, 19));         
+            //satelite.Z = processdata.ChangeDataToD(strlines[j].Substring(4, 19));         
         }
              
         public void readN(int j, string[] strlines, ref int EPHEMERISBLOCKNum, List<Form1.EPHEMERISBLOCK> Satelite)//导航文件里没有SBAS卫星数据，因此只需要对R进行特殊处理即可
